@@ -218,7 +218,7 @@ document.querySelectorAll('.addItem').forEach(addButton => {
       //el.classList.remove('editing');
       addButton.style.removeProperty('padding');
       addButton.style.removeProperty('border');
-      addButton.textContent = 'New task';
+      addButton.textContent = 'Add task';
       addButton.className = 'addItem';
     };
 
