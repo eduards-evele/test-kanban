@@ -18,6 +18,7 @@ function loadData() {
   }
 }
 
+//Apply saved theme
 function reloadTheme() {
     const rootStyle = document.querySelector(':root');
     const theme = localStorage.getItem("theme");
@@ -37,6 +38,7 @@ function reloadTheme() {
     });
 }
 
+//Switch theme
 function switchTheme() {
     const currentTheme = localStorage.getItem("theme");
 
@@ -49,21 +51,6 @@ function switchTheme() {
     reloadTheme();
 }
 let draggedItem = null;
-let draggedFrom = null; //Column index, item is dragged from
-
-function addItem(columnIndex) {
-    const itemText = prompt("Enter new item")
-    if(itemText !== "") {
-        const el = document.createElement("div")
-        el.textContent = itemText
-        el.className = "item"
-        el.draggable = true
-        containers[columnIndex].appendChild(el)
-        addItemHanldlers(el);
-
-    }
-    saveBoard();
-}
 
 //Save board items arrangement to localStorage
 function saveBoard() {
@@ -82,27 +69,75 @@ function saveBoard() {
 //Add event handlers for items
 function addItemHanldlers(el) {
   el.addEventListener('dragstart', (e) => {
-        draggedItem = el;
-        e.dataTransfer.setData('text/plain', '');
-        setTimeout(() => {
-          el.style.display = 'none';
-        }, 0);
-      });
+    draggedItem = el;
+    e.dataTransfer.setData('text/plain', '');
+    setTimeout(() => {
+      el.style.display = 'none';
+    }, 0);
+  });
 
-      el.addEventListener('dragend', () => {
-        draggedItem.style.display = 'block';
-        draggedItem = null;
-      });
-      el.addEventListener('dblclick', (e) => {
-        const newText = prompt("Enter updated item text. Empty string to delete");
-        if(newText === "") {
-            el.remove();   
-        }
-        else {
-          el.textContent = newText;
-        }
-        saveBoard();
+  el.addEventListener('dragend', () => {
+    draggedItem.style.display = 'block';
+    draggedItem = null;
+  });
+
+  el.addEventListener('click', (e) => {
+    // Prevent editing if already editing
+    if (el.classList.contains('editing')) return;
+    el.classList.add('editing');
+    
+    //Add input field to edit item and deletion button
+    const editItem = document.createElement('input');
+    const deleteItem = document.createElement('div');
+
+    deleteItem.className = 'deleteItem';
+    deleteItem.textContent = "Delete";
+
+    const currentText = el.textContent;
+    el.innerHTML = '';
+    editItem.type = 'text';
+    editItem.value = currentText;
+    editItem.focus();
+    el.appendChild(editItem);
+    el.appendChild(deleteItem);
+
+    
+
+    el.style.setProperty('padding', '0');
+    el.style.setProperty('border', '0');
+    let handled = false;
+    const addHandler = () => {
+      handled = !handled;
+      const newText = editItem.value.trim();
+      if (newText !== "") {
+        el.textContent = newText;
+      } else {
+        el.remove();
+      }
+      saveBoard();
+      el.classList.remove('editing');
+      el.style.removeProperty('padding');
+      el.style.removeProperty('border');
+    };
+
+    editItem.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        addHandler();
+      }
     });
+
+    editItem.addEventListener("focusout", () => {
+      addHandler();
+    });
+
+    deleteItem.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      el.remove();
+      saveBoard();
+    });
+  });
 }
 
 //Add event handlers for columnns
@@ -149,5 +184,53 @@ containers.forEach(container => {
 
   container.addEventListener('dragover', (e) => {
     e.preventDefault();
+  });
+});
+
+
+//Add new item to board
+document.querySelectorAll('.addItem').forEach(addButton => {
+  addButton.addEventListener("click", (e) => {
+    addButton.style.setProperty('padding', '0');
+    addButton.style.setProperty('border', '0');
+    addButton.className = ".newItemInput"
+    const column = Number(addButton.id.split('_')[1]);
+    addButton.innerHTML = "";
+    const inputItem = document.createElement("input");
+    inputItem.type = "text";
+
+    addButton.appendChild(inputItem);
+    inputItem.focus();
+    let handled = false;
+    const addHandler = () => {
+       if (handled) return;
+      handled = true;
+      const newText = inputItem.value.trim();
+      if (newText !== "") {
+        const newItem = document.createElement('div');
+        newItem.className = 'item';
+        newItem.draggable = true
+        newItem.textContent = newText;
+        addItemHanldlers(newItem);
+        containers[column-1].appendChild(newItem);
+      }
+      saveBoard();
+      //el.classList.remove('editing');
+      addButton.style.removeProperty('padding');
+      addButton.style.removeProperty('border');
+      addButton.textContent = 'New task';
+      addButton.className = 'addItem';
+    };
+
+    inputItem.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        addHandler();
+      }
+    });
+
+    inputItem.addEventListener("focusout", () => {
+      addHandler();
+    });
   });
 });
